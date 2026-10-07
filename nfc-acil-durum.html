@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Acil Durum İletişim Bilgileri</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fb;color:#172033}
+.wrap{max-width:520px;margin:auto;padding:20px}.card{background:#fff;border-radius:22px;padding:24px;box-shadow:0 8px 30px #00000012}
+h1{font-size:24px;margin:0 0 8px}.sub{color:#667085;margin-bottom:22px}.name{font-size:28px;font-weight:800;margin:8px 0}.class{display:inline-block;background:#eef4ff;padding:7px 12px;border-radius:999px;margin-bottom:20px}
+.person{border:1px solid #e5e7eb;border-radius:16px;padding:16px;margin:12px 0}.person b{display:block;font-size:18px;margin-bottom:5px}.phone{color:#475467;margin-bottom:12px}
+.call{display:block;text-align:center;text-decoration:none;background:#1677ff;color:white;padding:13px;border-radius:12px;font-weight:700}
+.note{background:#fff7ed;border-radius:16px;padding:15px;margin-top:16px}.error{color:#b42318}
+</style>
+</head>
+<body>
+<div class="wrap"><div class="card" id="app">Yükleniyor…</div></div>
+<script>
+const SUPABASE_URL="BURAYA_SUPABASE_URL";
+const SUPABASE_ANON_KEY="BURAYA_PUBLISHABLE_KEY";
+
+async function load(){
+ const code=decodeURIComponent(location.pathname.split("/").filter(Boolean).pop()||"");
+ const app=document.getElementById("app");
+ if(!code){app.innerHTML='<div class="error">NFC kodu bulunamadı.</div>';return}
+ try{
+  const r=await fetch(SUPABASE_URL+"/rest/v1/rpc/get_emergency_contact",{
+   method:"POST",
+   headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":"Bearer "+SUPABASE_ANON_KEY},
+   body:JSON.stringify({p_nfc_code:code})
+  });
+  const d=await r.json();
+  const x=Array.isArray(d)?d[0]:d;
+  if(!x){app.innerHTML='<div class="error">Bu NFC koduna ait kayıt bulunamadı.</div>';return}
+  const tel=v=>(v||"").replace(/[^\d+]/g,"");
+  app.innerHTML=`
+   <div class="sub">🚨 ACİL DURUM İLETİŞİM BİLGİLERİ</div>
+   <div class="name">${x.student_name||""}</div>
+   <div class="class">${x.class_name||"Sınıf bilgisi yok"}</div>
+   ${x.mother_name||x.mother_phone?`<div class="person"><b>Anne: ${x.mother_name||""}</b><div class="phone">${x.mother_phone||""}</div>${x.mother_phone?`<a class="call" href="tel:${tel(x.mother_phone)}">📞 Anneyi Ara</a>`:""}</div>`:""}
+   ${x.father_name||x.father_phone?`<div class="person"><b>Baba: ${x.father_name||""}</b><div class="phone">${x.father_phone||""}</div>${x.father_phone?`<a class="call" href="tel:${tel(x.father_phone)}">📞 Babayı Ara</a>`:""}</div>`:""}
+   ${x.emergency_note?`<div class="note"><b>Acil durum notu</b><br>${x.emergency_note}</div>`:""}
+  `;
+ }catch(e){app.innerHTML='<div class="error">Bilgiler alınamadı. Lütfen tekrar deneyin.</div>'}
+}
+load();
+</script>
+</body>
+</html>
